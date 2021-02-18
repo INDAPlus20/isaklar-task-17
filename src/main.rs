@@ -1,16 +1,19 @@
-use std::io;
+use std::{io, usize};
 use std::{cmp::min, io::prelude::*, ops::Add};
+use std::time::Instant;
+
 
 fn main() {
+    let timer = Instant::now();
     // allocate memory for the input buffer
-    let mut buf: String = String::with_capacity(100);
+    let mut buf: String = String::with_capacity(100000);
 
     // get input lines as strings
     io::stdin().read_to_string(&mut buf).expect("err");
     let lines = buf.split("\n");
 
-    let mut dicts: Vec<&str> = Vec::with_capacity(500000);
-    let mut inputs: Vec<&str> = Vec::with_capacity(100);
+    let mut dicts: Vec<Word> = Vec::with_capacity(500000);
+    let mut inputs: Vec<Word>  = Vec::with_capacity(100);
     let mut dict_mode = true;
     for e in lines {
         if e != "" {
@@ -20,55 +23,90 @@ fn main() {
                     dict_mode = false;
                     continue;
                 } else {
-                    dicts.push(e);
+                    dicts.push(as_word(e));
                 }
             } else {
-                inputs.push(e);
+                inputs.push(as_word(e));
             }
         }
     }
-    let mut distance = 40;
-    let mut shortest: Vec<&str> = Vec::with_capacity(dicts.len());
+
+    //let input_end = timer.elapsed().as_millis();
+    //println!("Input: {:?}ms", input_end);
+
+    let mut distance: usize = 41;
+    let mut shortest = vec![0;500_000];
+    let mut current: usize = 0;
+    let mut previous: [char; 40] = [' '; 40];
     for input in inputs {
-        for word in &dicts {
-            let result = compare(input, word);
+        //let a: Vec<char> = input.chars().collect();
+        let time = Instant::now();
+        let mut matrix = [[0; 41]; 41];
+        for col in 0..41 {
+            matrix[col][0] = col;
+        }
+        for row in 0..41 {
+            matrix[0][row] = row;
+        }
+        for i  in 0..dicts.len() {
+            
+            //let b: Vec<char> = word.chars().collect();
+            
+            let min = min_distance(&input, &dicts[i]) as usize;
+            if min > distance {
+                continue;
+            }
+            let result = compare(&input, &dicts[i], &mut matrix, similarity(&dicts[i].array, &previous));
             //println!("result: {:?}", result);
             if result < distance {
                 distance = result;
-                shortest.clear();
-                shortest.push(word);
+                current = 1;
+                shortest[0] = i;
+                
             } else if result == distance {
-                shortest.push(word);
+                shortest[current] = i;
+                current += 1;
             }
+            previous = dicts[i].array;
             //println!("{:?} ({:?}){:?}", input,distance , &shortest);
         }
+        //println!("Algo: {}ms", time.elapsed().as_millis());
+        //let time_print = Instant::now();
         let mut output = String::with_capacity(1000);
-        // output += input;
-
-        // output += &format!(" ({}) ", distance);
-        for e in &shortest {
-            output += &format!("{} ", e);
+        for i  in 0..input.length {
+            output.push(input.array[i]);
         }
-        println!("{} ({}) {}", input, distance, output);
-        shortest.clear();
-        distance = 40;
+
+        // output += input;
+        //println!("Shortest at 0: {:?}", shortest[0]);
+        output += &format!(" ({}) ", distance);
+        for e in 0..current {
+            for i in 0..dicts[shortest[e]].length {
+                output.push(dicts[shortest[e]].array[i]);
+            }
+            output.push(' ');
+        }
+        
+        println!("{}", output);
+       // println!("Print: {}ms", time_print.elapsed().as_millis());
+        //println!("{} ({}) {}", input, distance, output);
+        current = 0;
+        distance = 41;
+        
     }
+    println!("Total: {:?}ms", timer.elapsed().as_millis());
 }
 
-fn compare(a: &str, b: &str) -> usize {
-    let a = a.as_bytes();
-    let b = b.as_bytes();
-    let mut matrix = vec![vec![0; a.len() + 1]; b.len() + 1];
-    for col in 0..(b.len() + 1) {
-        matrix[col][0] = col;
-    }
-    for row in 0..(a.len() + 1) {
-        matrix[0][row] = row;
-    }
-    for row in 1..(a.len() + 1) {
-        for col in 1..(b.len() + 1) {
+fn compare(a: &Word, b: &Word, matrix: &mut [[usize; 41]; 41], offset: usize ) -> usize {
+    //let a: Vec<char> = a.chars().collect();
+    //let b: Vec<char> = b.chars().collect();
+    
+    //println!("{:?}", a);
+    
+    for row in 1..(a.length + 1) {
+        for col in (offset +1)..(b.length + 1) {
             let substitution;
-            if a[row - 1] == b[col - 1] {
+            if a.array[row - 1] == b.array[col - 1] {
                 substitution = 0;
             } else {
                 substitution = 1;
@@ -80,5 +118,45 @@ fn compare(a: &str, b: &str) -> usize {
         }
     }
     //println!("{:?}", matrix);
-    return matrix[b.len()][a.len()];
+    return matrix[b.length][a.length];
 }
+
+fn min_distance(a: &Word, b: &Word) -> i32 {
+    //let a: Vec<char> = a.chars().collect();
+    //let b: Vec<char> = b.chars().collect();
+
+    return (a.length as i32 - b.length as i32).abs()
+}
+
+fn similarity(a: &[char; 40], b: &[char; 40]) -> usize{
+    
+    for i in 0..40 {
+        if a[i] != b[i] {
+            return i;
+        }
+    }
+    return 0;
+}
+
+struct Word {
+    length: usize,
+    array: [char; 40]
+}
+
+fn as_word(string: &str) -> Word {
+    let mut chars = string.chars();
+    let mut temp: [char; 40] = [' '; 40];
+    let mut current: usize = 0;
+    
+    for c in chars {
+        temp[current] = c;
+        current += 1;
+    }
+    return Word{
+        length: current + 1,
+        array: temp
+    };
+}
+// impl Word {
+//     pub fn new
+// }
