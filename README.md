@@ -2,4 +2,4 @@
 
 Thank you oskhen for the `ordlistaMODIFIED.txt` which i used for benchmarking
 
-I refuse to deal with bytes
+I refuse to handle bytes
