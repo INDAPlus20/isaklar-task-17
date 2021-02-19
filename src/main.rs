@@ -56,7 +56,7 @@ fn main() {
             if min > distance {
                 continue;
             }
-            let result = compare(&input, &dicts[i], &mut matrix, similarity(&dicts[i].array, &previous));
+            let result = compare(&input,&dicts[i] , &mut matrix, similarity(&dicts[i].array, &previous));
             //println!("result: {:?}", result);
             if result < distance {
                 distance = result;
@@ -92,21 +92,23 @@ fn main() {
         //println!("{} ({}) {}", input, distance, output);
         current = 0;
         distance = 41;
+        previous = [' '; 40];
         
     }
     println!("Total: {:?}ms", timer.elapsed().as_millis());
 }
 
-fn compare(a: &Word, b: &Word, matrix: &mut [[usize; 41]; 41], offset: usize ) -> usize {
+fn compare(input: &Word, dict: &Word, matrix: &mut [[usize; 41]; 41], offset: usize ) -> usize {
     //let a: Vec<char> = a.chars().collect();
     //let b: Vec<char> = b.chars().collect();
     
     //println!("{:?}", a);
     
-    for row in 1..(a.length + 1) {
-        for col in (offset +1)..(b.length + 1) {
+    for row in 1..(input.length + 1) {
+        for col in (offset + 1 )..(dict.length + 1) {
+
             let substitution;
-            if a.array[row - 1] == b.array[col - 1] {
+            if input.array[row - 1] == dict.array[col - 1] {
                 substitution = 0;
             } else {
                 substitution = 1;
@@ -118,7 +120,7 @@ fn compare(a: &Word, b: &Word, matrix: &mut [[usize; 41]; 41], offset: usize ) -
         }
     }
     //println!("{:?}", matrix);
-    return matrix[b.length][a.length];
+    return matrix[dict.length][input.length];
 }
 
 fn min_distance(a: &Word, b: &Word) -> i32 {
@@ -132,6 +134,7 @@ fn similarity(a: &[char; 40], b: &[char; 40]) -> usize{
     
     for i in 0..40 {
         if a[i] != b[i] {
+            
             return i;
         }
     }
@@ -160,3 +163,16 @@ fn as_word(string: &str) -> Word {
 // impl Word {
 //     pub fn new
 // }
+#[cfg(test)]
+mod test {
+    use crate::as_word;
+    use crate::*;
+    #[test]
+    fn simisdlarity() {
+        let a = as_word("mask");
+        let b = as_word("masken");
+        let sim = similarity(&a.array, &b.array);
+        println!("Sim: {}", sim );
+    }
+}
+
