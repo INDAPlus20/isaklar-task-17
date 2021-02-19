@@ -4,6 +4,7 @@ use std::time::Instant;
 
 
 fn main() {
+    #[cfg(feature = "bench")]
     let timer = Instant::now();
     // allocate memory for the input buffer
     let mut buf: String = String::with_capacity(100000);
@@ -95,6 +96,7 @@ fn main() {
         previous = [' '; 40];
         
     }
+    #[cfg(feature = "bench")]
     println!("Total: {:?}ms", timer.elapsed().as_millis());
 }
 
